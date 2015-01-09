@@ -5,7 +5,7 @@
 ;; Author: David Raymond Christiansen <david@davidchristiansen.dk>
 ;; Keywords: docs, multimedia
 ;; Package-Requires: ((emacs "24") (cl-lib "0.5") (narrowed-page-navigation "0.1"))
-;; Version: 0.1.0
+;; Version: 0.1.1
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -143,6 +143,7 @@ To change the format used for comments, set `live-code-talks-comment-regexp'."
   "Whether to re-enable linum on exit from slide mode.")
 (make-variable-buffer-local 'live-code-talks-restore-linum)
 
+;;;###autoload
 (define-minor-mode live-code-talks-mode
   "A minor mode for presenting a code buffer as slides."
   nil "Talk" nil
