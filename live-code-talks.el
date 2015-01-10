@@ -5,7 +5,7 @@
 ;; Author: David Raymond Christiansen <david@davidchristiansen.dk>
 ;; Keywords: docs, multimedia
 ;; Package-Requires: ((emacs "24") (cl-lib "0.5") (narrowed-page-navigation "0.1"))
-;; Version: 0.1.1
+;; Version: 0.2.0
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -87,7 +87,18 @@ To change the format used for titles, set `live-code-talks-title-regexp'."
                    do (delete-overlay overlay)))))))
 
 (defvar live-code-talks-image-regexp "^\\s-*--\\s-*\\[\\[\\[\\([^]]+\\)\\]\\]\\]\\s-*$"
-  "A regexp to determine which images should be shown.  Group 1 should be the filename relative to the current buffer's file.")
+  "A regexp to determine which images should be shown.  Group 1 should be an image specification, which will be made relative to the current buffer.")
+
+(defun live-code-talks-make-image-relative (image dir)
+  "If the specifier IMAGE is a relative filename, return a new specifier with an absolute name relative to DIR.  Otherwise, return IMAGE."
+  (if (not (and (consp image) (eq (car image) 'image)))
+      (error "Not an image descriptor")
+    (let ((file-name (plist-get (cdr image) :file)))
+      (if (not (stringp file-name))
+          image
+        (let ((new-image (copy-list (cdr image))))
+          (plist-put new-image :file (expand-file-name file-name dir))
+          (cons 'image new-image))))))
 
 (defun live-code-talks-show-images (&optional buffer)
   "Replace images matching `live-code-talks-image-regexp' with the actual image in BUFFER, or the current buffer if nil."
@@ -97,11 +108,8 @@ To change the format used for titles, set `live-code-talks-title-regexp'."
       (save-excursion
         (goto-char (point-min))
         (while (re-search-forward live-code-talks-image-regexp nil t)
-          (let* ((file-name (expand-file-name (match-string 1) (file-name-directory (buffer-file-name buffer))))
-                 (image `(image :type imagemagick
-                                :file ,file-name
-                                :max-height ,(floor (* 0.7 (window-pixel-height)))
-                                :max-width ,(floor (* 0.9 (window-pixel-width)))))
+          (let* ((base-image (read (match-string 1)))
+                 (image (live-code-talks-make-image-relative base-image (file-name-directory (buffer-file-name))))
                  (image-overlay (make-overlay (match-beginning 0) (match-end 0))))
             (overlay-put image-overlay 'live-code-talks 'image)
             (overlay-put image-overlay 'display         image)
