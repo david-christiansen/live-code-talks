@@ -5,7 +5,7 @@
 ;; Author: David Raymond Christiansen <david@davidchristiansen.dk>
 ;; Keywords: docs, multimedia
 ;; Package-Requires: ((emacs "24") (cl-lib "0.5") (narrowed-page-navigation "0.1"))
-;; Version: 0.2.0
+;; Version: 0.2.1
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -48,12 +48,32 @@
   "Face for showing slide titles"
   :group 'live-code-talks)
 
-(defvar live-code-talks-title-regexp "^\\s-*--\\s-*#\\s-*\\(.+\\)$"
+(defface live-code-talks-subtitle-face
+  '((t (:inherit live-code-talks-title-face)
+       (:height 0.75)))
+  "Face for showing slide titles"
+  :group 'live-code-talks)
+
+(defface live-code-talks-subsubtitle-face
+  '((t (:inherit live-code-talks-subtitle-face)
+       (:height 0.9)))
+  "Face for showing slide titles"
+  :group 'live-code-talks)
+
+(defvar live-code-talks-title-regexp "^\\s-*--\\s-*#\\s-*\\([^#].*\\)$"
   "The regexp to match for slide titles.  The contents of match group 1 will be highlighted.")
 (make-variable-buffer-local 'live-code-talks-title-regexp)
 
-(defun live-code-talks-highlight-titles (&optional buffer)
-  "Place highlighting on all titles in BUFFER, or the current buffer if nil.
+(defvar live-code-talks-subtitle-regexp "^\\s-*--\\s-*##\\s-*\\([^#].*\\)$"
+  "The regexp to match for slide subtitles.  The contents of match group 1 will be highlighted.")
+(make-variable-buffer-local 'live-code-talks-title-regexp)
+
+(defvar live-code-talks-subsubtitle-regexp "^\\s-*--\\s-*###\\s-*\\([^#].*\\)$"
+  "The regexp to match for slide subsubtitles.  The contents of match group 1 will be highlighted.")
+(make-variable-buffer-local 'live-code-talks-title-regexp)
+
+(defun live-code-talks-highlight-titles (regexp face &optional buffer)
+  "Use REGEXP to find titles, and highlight them with FACE, placing highlighting on all titles in BUFFER, or the current buffer if nil.
 
 To change the format used for titles, set `live-code-talks-title-regexp'."
   (with-current-buffer (or buffer (current-buffer))
@@ -61,13 +81,13 @@ To change the format used for titles, set `live-code-talks-title-regexp'."
       (widen)
       (save-excursion
         (goto-char (point-min))
-        (while (re-search-forward live-code-talks-title-regexp nil t)
+        (while (re-search-forward regexp nil t)
           ;; First make an overlay applying the title face to the
           ;; actual title, in match group 1
           (let ((title-overlay (make-overlay (match-beginning 1) (match-end 1)))
                 (title-area-overlay (make-overlay (match-beginning 0) (match-end 0))))
             (overlay-put title-overlay 'live-code-talks 'title)
-            (overlay-put title-overlay 'face            'live-code-talks-title-face)
+            (overlay-put title-overlay 'face            face)
             (overlay-put title-overlay 'display         t)
             (overlay-put title-overlay 'intangible      'title)
             (overlay-put title-area-overlay 'live-code-talks 'title)
@@ -159,7 +179,12 @@ To change the format used for comments, set `live-code-talks-comment-regexp'."
       (progn
         (setq live-code-talks-restore-linum linum-mode)
         (linum-mode -1)
-        (live-code-talks-highlight-titles)
+        (live-code-talks-highlight-titles live-code-talks-title-regexp
+                                          'live-code-talks-title-face)
+        (live-code-talks-highlight-titles live-code-talks-subtitle-regexp
+                                          'live-code-talks-subtitle-face)
+        (live-code-talks-highlight-titles live-code-talks-subsubtitle-regexp
+                                          'live-code-talks-subsubtitle-face)
         (live-code-talks-show-images)
         (live-code-talks-highlight-comments)
         (narrow-to-page)
