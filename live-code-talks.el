@@ -96,7 +96,7 @@ To change the format used for titles, set `live-code-talks-title-regexp'."
 (defun live-code-talks-unhighlight (what &optional buffer)
   "Delete all WHAT highlighting in BUFFER, or the current buffer if nil.
 
- WHAT can be `title', `image', or `comment'."
+ WHAT can be `title', `image', `comment', or `hidden'."
   (with-current-buffer (or buffer (current-buffer))
     (save-restriction
       (widen)
@@ -166,6 +166,29 @@ To change the format used for comments, set `live-code-talks-comment-regexp'."
             (overlay-put comment-area-overlay 'live-code-talks 'comment)
             (overlay-put comment-area-overlay 'display         "")))))))
 
+(defvar live-code-talks-begin-hide-regexp "-- *{hide} *"
+  "Regexp beginning regions that should be invisible in slide mode.")
+
+(defvar live-code-talks-end-hide-regexp "-- *{show} *"
+  "Regexp ending regions that should be invisible in slide mode.")
+
+(defun live-code-talks-hide-junk (&optional buffer)
+  "Don't display hidden regions in BUFFER, or current buffer if nil."
+  (with-current-buffer (or buffer (current-buffer))
+    (save-restriction
+      (widen)
+      (save-excursion
+        (goto-char (point-min))
+        (let (hide-start hide-end overlay)
+          (while (re-search-forward live-code-talks-begin-hide-regexp nil t)
+            (setq hide-start (match-beginning 0))
+            (when (re-search-forward live-code-talks-end-hide-regexp nil t)
+              (setq hide-end (match-end 0))
+              (setq overlay (make-overlay hide-start hide-end))
+              (overlay-put overlay 'live-code-talks 'hidden)
+              (overlay-put overlay 'display "")
+              (overlay-put overlay 'priority 10))))))))
+
 
 (defvar live-code-talks-restore-linum nil
   "Whether to re-enable linum on exit from slide mode.")
@@ -186,6 +209,7 @@ To change the format used for comments, set `live-code-talks-comment-regexp'."
         (live-code-talks-highlight-titles live-code-talks-subsubtitle-regexp
                                           'live-code-talks-subsubtitle-face)
         (live-code-talks-show-images)
+        (live-code-talks-hide-junk)
         (live-code-talks-highlight-comments)
         (narrow-to-page)
         (narrowed-page-navigation-mode 1))
@@ -193,9 +217,8 @@ To change the format used for comments, set `live-code-talks-comment-regexp'."
       (when live-code-talks-restore-linum (linum-mode 1))
       (widen)
       (narrowed-page-navigation-mode -1)
-      (live-code-talks-unhighlight 'title)
-      (live-code-talks-unhighlight 'image)
-      (live-code-talks-unhighlight 'comment))))
+      (cl-loop for what in '(title image comment hidden)
+               do (live-code-talks-unhighlight what)))))
 
 
 (provide 'live-code-talks)
