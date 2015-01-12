@@ -140,7 +140,7 @@ To change the format used for titles, set `live-code-talks-title-regexp'."
   "Face used for stripped-out comments"
   :group 'live-code-talks)
 
-(defvar live-code-talks-comment-regexp "^ *--\\( *[^[ #].*\\| *\\)$"
+(defvar live-code-talks-comment-regexp "^ *--\\( *[^[ #{].*\\| *\\)$"
   "The regexp to match for slide titles.  The contents of match group 1 will be highlighted.")
 (make-variable-buffer-local 'live-code-talks-comment-regexp)
 
