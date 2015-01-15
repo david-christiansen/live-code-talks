@@ -55,9 +55,16 @@
   :group 'live-code-talks)
 
 (defface live-code-talks-subsubtitle-face
-  '((t (:inherit live-code-talks-subtitle-face)
-       (:height 0.9)))
+  '((t (:inherit live-code-talks-subtitle-face
+                 :height 0.9)))
   "Face for showing slide titles"
+  :group 'live-code-talks)
+
+(defface live-code-talks-button-face
+  '((t (:inherit custom-button
+                 :slant none
+                 :foreground black)))
+  "Face for clickable buttons in presentations"
   :group 'live-code-talks)
 
 (defvar live-code-talks-title-regexp "^\\s-*--\\s-*#\\s-*\\([^#].*\\)$"
@@ -89,14 +96,13 @@ To change the format used for titles, set `live-code-talks-title-regexp'."
             (overlay-put title-overlay 'live-code-talks 'title)
             (overlay-put title-overlay 'face            face)
             (overlay-put title-overlay 'display         t)
-            (overlay-put title-overlay 'intangible      'title)
             (overlay-put title-area-overlay 'live-code-talks 'title)
             (overlay-put title-area-overlay 'display         "")))))))
 
 (defun live-code-talks-unhighlight (what &optional buffer)
   "Delete all WHAT highlighting in BUFFER, or the current buffer if nil.
 
- WHAT can be `title', `image', `comment', or `hidden'."
+ WHAT can be `title', `image', `comment', `button' or `hidden'."
   (with-current-buffer (or buffer (current-buffer))
     (save-restriction
       (widen)
@@ -161,7 +167,6 @@ To change the format used for comments, set `live-code-talks-comment-regexp'."
             (overlay-put comment-overlay 'live-code-talks 'comment)
             (overlay-put comment-overlay 'face            'live-code-talks-comment-face)
             (overlay-put comment-overlay 'display         t)
-            (overlay-put comment-overlay 'intangible      'comment)
             (overlay-put comment-area-overlay 'read-only       t)
             (overlay-put comment-area-overlay 'live-code-talks 'comment)
             (overlay-put comment-area-overlay 'display         "")))))))
@@ -189,6 +194,35 @@ To change the format used for comments, set `live-code-talks-comment-regexp'."
               (overlay-put overlay 'display "")
               (overlay-put overlay 'priority 10))))))))
 
+(defun live-code-talks-in-comment-p (&optional pos)
+  "Determine whether POS is in a comment or not."
+  (save-excursion (nth 4 (syntax-ppss pos))))
+
+(defvar live-code-talks-button-regexp "{{{\\(.+\\)|||\\(.+\\)}}}"
+  "Regexp describing how to find clickable buttons. Matching
+group 1 contains the button text and matching group 2 contains
+the Lisp expresion to evaluate.")
+
+(defun live-code-talks-make-buttons (&optional buffer)
+  (with-current-buffer (or buffer (current-buffer))
+    (save-restriction
+      (widen)
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward live-code-talks-button-regexp nil t)
+          (when (and (live-code-talks-in-comment-p (match-beginning 0))
+                     (live-code-talks-in-comment-p (match-end 0)))
+            (let* ((text (match-string 1))
+                   (expr (match-string 2))
+                   (button (make-button (match-beginning 0) (match-end 0)
+                                        'action (read expr)
+                                        'display (progn (set-text-properties 0 (length text) nil text)
+                                                        text)
+                                        'face 'live-code-talks-button-face)))
+              (overlay-put button 'priority 10)
+              (overlay-put button 'live-code-talks 'button))))))))
+
+
 
 (defvar live-code-talks-restore-linum nil
   "Whether to re-enable linum on exit from slide mode.")
@@ -211,13 +245,14 @@ To change the format used for comments, set `live-code-talks-comment-regexp'."
         (live-code-talks-show-images)
         (live-code-talks-hide-junk)
         (live-code-talks-highlight-comments)
+        (live-code-talks-make-buttons)
         (narrow-to-page)
         (narrowed-page-navigation-mode 1))
     (progn
       (when live-code-talks-restore-linum (linum-mode 1))
       (widen)
       (narrowed-page-navigation-mode -1)
-      (cl-loop for what in '(title image comment hidden)
+      (cl-loop for what in '(title image comment hidden button)
                do (live-code-talks-unhighlight what)))))
 
 
