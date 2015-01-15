@@ -62,8 +62,8 @@
 
 (defface live-code-talks-button-face
   '((t (:inherit custom-button
-                 :slant none
-                 :foreground black)))
+                 :slant normal
+                 :foreground "black")))
   "Face for clickable buttons in presentations"
   :group 'live-code-talks)
 
