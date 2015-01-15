@@ -116,15 +116,31 @@ To change the format used for titles, set `live-code-talks-title-regexp'."
   "A regexp to determine which images should be shown.  Group 1 should be an image specification, which will be made relative to the current buffer.")
 
 (defun live-code-talks-make-image-relative (image dir)
-  "If the specifier IMAGE is a relative filename, return a new specifier with an absolute name relative to DIR.  Otherwise, return IMAGE."
+  "If the specifier IMAGE is a relative filename, return a new specifier with an absolute name relative to DIR.  Otherwise, return IMAGE. Additionally, make any width and height specifications that are floating point numbers into window-relative values."
   (if (not (and (consp image) (eq (car image) 'image)))
       (error "Not an image descriptor")
-    (let ((file-name (plist-get (cdr image) :file)))
-      (if (not (stringp file-name))
-          image
-        (let ((new-image (copy-list (cdr image))))
-          (plist-put new-image :file (expand-file-name file-name dir))
-          (cons 'image new-image))))))
+    (let ((props (cdr image))
+          (new-props (cl-copy-list (cdr image))))
+      (let ((file-name (plist-get props :file)))
+        (when (stringp file-name)
+          (setq new-props (plist-put new-props :file (expand-file-name file-name dir)))))
+      (let ((width (plist-get props :width)))
+        (when (floatp width)
+          (setq new-props (plist-put new-props
+                                     :width (floor (* (window-pixel-width) width))))))
+      (let ((height (plist-get props :height)))
+        (when (floatp height)
+          (setq new-props (plist-put new-props
+                                     :height (floor (* (window-pixel-height) height))))))
+      (let ((max-width (plist-get props :max-width)))
+        (when (floatp max-width)
+          (setq new-props (plist-put new-props
+                                     :max-width (floor (* (window-pixel-width) max-width))))))
+      (let ((max-height (plist-get props :max-height)))
+        (when (floatp max-height)
+          (setq new-props (plist-put new-props
+                                     :max-height (floor (* (window-pixel-height) max-height))))))
+      (cons 'image new-props))))
 
 (defun live-code-talks-show-images (&optional buffer)
   "Replace images matching `live-code-talks-image-regexp' with the actual image in BUFFER, or the current buffer if nil."
