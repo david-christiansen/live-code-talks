@@ -91,13 +91,10 @@ To change the format used for titles, set `live-code-talks-title-regexp'."
         (while (re-search-forward regexp nil t)
           ;; First make an overlay applying the title face to the
           ;; actual title, in match group 1
-          (let ((title-overlay (make-overlay (match-beginning 1) (match-end 1)))
-                (title-area-overlay (make-overlay (match-beginning 0) (match-end 0))))
-            (overlay-put title-overlay 'live-code-talks 'title)
-            (overlay-put title-overlay 'face            face)
-            (overlay-put title-overlay 'display         t)
+          (let ((title-area-overlay (make-overlay (match-beginning 0) (match-end 0) nil t)))
+            (overlay-put title-area-overlay 'face face)
             (overlay-put title-area-overlay 'live-code-talks 'title)
-            (overlay-put title-area-overlay 'display         "")))))))
+            (overlay-put title-area-overlay 'display (match-string-no-properties 1))))))))
 
 (defun live-code-talks-unhighlight (what &optional buffer)
   "Delete all WHAT highlighting in BUFFER, or the current buffer if nil.
@@ -152,7 +149,7 @@ To change the format used for titles, set `live-code-talks-title-regexp'."
         (while (re-search-forward live-code-talks-image-regexp nil t)
           (let* ((base-image (read (match-string 1)))
                  (image (live-code-talks-make-image-relative base-image (file-name-directory (buffer-file-name))))
-                 (image-overlay (make-overlay (match-beginning 0) (match-end 0))))
+                 (image-overlay (make-overlay (match-beginning 0) (match-end 0) nil t)))
             (overlay-put image-overlay 'live-code-talks 'image)
             (overlay-put image-overlay 'display         image)
             (overlay-put image-overlay 'intangible      'image)))))))
@@ -178,14 +175,11 @@ To change the format used for comments, set `live-code-talks-comment-regexp'."
         (while (re-search-forward live-code-talks-comment-regexp nil t)
           ;; First make an overlay applying the comment face to the
           ;; actual comment, in match group 1
-          (let ((comment-overlay (make-overlay (match-beginning 1) (match-end 1)))
-                (comment-area-overlay (make-overlay (match-beginning 0) (match-end 0))))
-            (overlay-put comment-overlay 'live-code-talks 'comment)
-            (overlay-put comment-overlay 'face            'live-code-talks-comment-face)
-            (overlay-put comment-overlay 'display         t)
-            (overlay-put comment-area-overlay 'read-only       t)
+          (let ((comment-area-overlay (make-overlay (match-beginning 0) (match-end 0) nil t)))
             (overlay-put comment-area-overlay 'live-code-talks 'comment)
-            (overlay-put comment-area-overlay 'display         "")))))))
+            (overlay-put comment-area-overlay 'face 'live-code-talks-comment-face)
+            (overlay-put comment-area-overlay 'read-only t)
+            (overlay-put comment-area-overlay 'display (match-string-no-properties 1))))))))
 
 (defvar live-code-talks-begin-hide-regexp "-- *{hide} *"
   "Regexp beginning regions that should be invisible in slide mode.")
@@ -205,7 +199,7 @@ To change the format used for comments, set `live-code-talks-comment-regexp'."
             (setq hide-start (match-beginning 0))
             (when (re-search-forward live-code-talks-end-hide-regexp nil t)
               (setq hide-end (match-end 0))
-              (setq overlay (make-overlay hide-start hide-end))
+              (setq overlay (make-overlay hide-start hide-end nil t))
               (overlay-put overlay 'live-code-talks 'hidden)
               (overlay-put overlay 'display "")
               (overlay-put overlay 'priority 10))))))))
